@@ -13,18 +13,18 @@ fn main() {
     const N_CFMMS: usize = 5; // Number of CFMMs (m)
 
     let reserves = vec![
-        vec![40.0, 40.0, 40.0, 40.0], // Balancer pool
-        vec![100.0, 10.0],            // UniswapV2 pool: TOKEN-0/TOKEN-1
-        vec![10.0, 50.0],             // UniswapV2 pool: TOKEN-1/TOKEN-2
-        vec![400.0, 500.0],           // UniswapV2 pool: TOKEN-2/TOKEN-3
-        vec![100.0, 100.0],           // Constant Sum pool: TOKEN-2/TOKEN-3
+        vec![4.0, 4.0, 4.0, 4.0], // Balancer pool
+        vec![10.0, 1.0],          // UniswapV2 pool: TOKEN-0/TOKEN-1
+        vec![1.0, 5.0],           // UniswapV2 pool: TOKEN-1/TOKEN-2
+        vec![40.0, 50.0],         // UniswapV2 pool: TOKEN-2/TOKEN-3
+        vec![10.0, 10.0],         // Constant Sum pool: TOKEN-2/TOKEN-3
     ];
 
     let fees = vec![0.997, 0.997, 0.997, 0.997, 0.999]; // Pool fees (slightly reduced)
-    let market_value = vec![1.0, 10.0, 2.0, 3.0]; // Market values for tokens
+    let market_value = vec![1.5, 10.0, 2.0, 3.0]; // Market values for tokens
 
     // Set up the Totsu solver
-    //sjm
+
     let mut solver = Solver::<La>::new();
 
     // Adjust solver parameters
