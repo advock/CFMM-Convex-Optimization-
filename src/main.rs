@@ -24,6 +24,7 @@ fn main() {
     let market_value = vec![1.0, 10.0, 2.0, 3.0]; // Market values for tokens
 
     // Set up the Totsu solver
+    //sjm
     let mut solver = Solver::<La>::new();
 
     // Adjust solver parameters
