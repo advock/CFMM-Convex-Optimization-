@@ -1,22 +1,25 @@
 use totsu::prelude::*;
+use totsu::MatBuild;
+use totsu::ProbLP;
 use totsu::*;
+use totsu_core::MatOp;
 
 type La = FloatGeneric<f64>;
-type ASolver = Solver<La>;
+//type ASolver = Solver<La>;
 
 fn main() {
     const N_TOKENS: usize = 4; //n
     const N_CFMMS: usize = 5; // m
 
-    let global_indices = vec![0, 1, 2, 3];
+    // let global_indices = vec![0, 1, 2, 3];
 
-    let local_indices = vec![
-        vec![0, 1, 2, 3], // balancer pool with 4 tokens
-        vec![0, 1],       // UniswapV2 TOKEN-0/TOKEN-1
-        vec![1, 2],       // UniswapV2 TOKEN-1/TOKEN-2
-        vec![2, 3],       // UniswapV2 TOKEN-2/TOKEN-3
-        vec![2, 3],       // Constant Sum TOKEN-2/TOKEN-3
-    ];
+    // let local_indices = vec![
+    //     vec![0, 1, 2, 3], // balancer pool with 4 tokens
+    //     vec![0, 1],       // UniswapV2 TOKEN-0/TOKEN-1
+    //     vec![1, 2],       // UniswapV2 TOKEN-1/TOKEN-2
+    //     vec![2, 3],       // UniswapV2 TOKEN-2/TOKEN-3
+    //     vec![2, 3],       // Constant Sum TOKEN-2/TOKEN-3
+    // ];
 
     let reserves = vec![
         vec![4.0, 4.0, 4.0, 4.0], // balancer
@@ -33,10 +36,26 @@ fn main() {
     let mut deltas: Vec<Vec<f64>> = vec![vec![0.0; N_TOKENS]; N_CFMMS];
     let mut lambdas: Vec<Vec<f64>> = vec![vec![0.0; N_TOKENS]; N_CFMMS];
 
-    let mut objective = 0.0;
+    //let mut objective = 0.0;
     for i in 0..N_TOKENS {
-        objective += market_value[i] * (lambdas[i][0] - deltas[i][0]); // Simplified case
+        deltas[0][i] = 1.0; // Sample value for deltas
+        lambdas[0][i] = 2.0; // Sample value for lambdas
     }
+
+    let mut objective_data = vec![0.0; N_TOKENS];
+
+    // Calculate the objective based on updated deltas and lambdas
+    for i in 0..N_TOKENS {
+        let mut objective = market_value[i] * (lambdas[0][i] - deltas[0][i]); // Use the first CFMM for the objective
+        objective_data.push(objective);
+    }
+
+    // Set up the Totsu solver
+    let mut solver = Solver::<La>::new();
+
+    // Create a matrix for the objective function
+    let c = MatOp::<La>::new(MatType::General(N_TOKENS, 1), objective_data.as_slice()); // The objective vector
+                                                                                        // c.assign_from_slice(&objective_data);
 
     let mut constraints = Vec::new();
 
@@ -72,5 +91,5 @@ fn main() {
         }
     }
 
-    let solver = ASolver::new();
+    let prob = ProbLP::<La>::new();
 }
