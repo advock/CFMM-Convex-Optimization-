@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 totsu = "0.10.2"
 ethers = "2.0.14"
+log = "0.4.17"
+env_logger = "0.10"
