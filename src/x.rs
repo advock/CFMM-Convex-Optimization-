@@ -1,9 +1,4 @@
-use totsu::prelude::*;
-use totsu::{MatBuild, ProbLP, ProbSOCP};
-type La = FloatGeneric<f64>;
-
 fn main() {
-    //a
     let reserves1: Vec<f64> = vec![100.0, 10.0]; // Pool 1: TOKEN-0/TOKEN-1
     let reserves2: Vec<f64> = vec![90.0, 15.0]; // Pool 2: TOKEN-0/TOKEN-1
     let fee: f64 = 0.997; // 0.3% fee
@@ -16,43 +11,48 @@ fn main() {
     vec_c[(3, 0)] = 1.0; // Receive TOKEN-0 from Pool 2
 
     // Constraint matrix G and vector h for Gx <= h
-    let mut mat_g = MatBuild::new(MatType::General(11, n_vars));
-    let mut vec_h = MatBuild::new(MatType::General(11, 1));
+    let mut mat_g = MatBuild::new(MatType::General(10, n_vars));
+    let mut vec_h = MatBuild::new(MatType::General(10, 1));
 
-    // Constant product constraints
+    // Constant product constraints (adjusted)
     mat_g[(0, 0)] = reserves1[1];
-    mat_g[(0, 1)] = -reserves1[0] / fee;
-    vec_h[(0, 0)] = 0.0; // x0 * reserves1[1] <= y1 * reserves1[0] / fee
+    mat_g[(0, 1)] = -reserves1[0];
+    vec_h[(0, 0)] = reserves1[0] * reserves1[1] * (1.0 / fee - 1.0); // (x0 + dx0) * (x1 - dy1/fee) >= x0 * x1
+    mat_g[(1, 2)] = reserves2[1];
+    mat_g[(1, 3)] = -reserves2[0];
+    vec_h[(1, 0)] = reserves2[0] * reserves2[1] * (1.0 / fee - 1.0); // (y0 - dy0/fee) * (y1 + dy1) >= y0 * y1
 
-    mat_g[(1, 2)] = reserves2[0];
-    mat_g[(1, 3)] = -reserves2[1] / fee;
-    vec_h[(1, 0)] = 0.0; // x2 * reserves2[0] <= y3 * reserves2[1] / fee
-
-    // Ensure new reserves are not less than original reserves
-    mat_g[(2, 0)] = 1.0;
-    vec_h[(2, 0)] = reserves1[0] * 0.1; // Limit trade to 10% of reserves
-    mat_g[(3, 2)] = 1.0;
-    vec_h[(3, 0)] = reserves2[1] * 0.1; // Limit trade to 10% of reserves
-
-    // Ensure TOKEN-1 received from Pool 1 equals TOKEN-1 traded to Pool 2
-    mat_g[(4, 1)] = 1.0;
-    mat_g[(4, 2)] = -1.0;
-    vec_h[(4, 0)] = 0.0; // y1 = x2
-
-    // Ensure profit is non-negative
-    mat_g[(5, 0)] = 1.0;
-    mat_g[(5, 3)] = -1.0;
-    vec_h[(5, 0)] = 0.0; // y3 >= x0
+    // Arbitrage constraints
+    mat_g[(2, 1)] = 1.0;
+    mat_g[(2, 2)] = -1.0;
+    vec_h[(2, 0)] = 0.0; // dy1 <= dy2
+    mat_g[(3, 3)] = 1.0;
+    mat_g[(3, 0)] = -1.0;
+    vec_h[(3, 0)] = 0.0; // dy0 <= dx0
 
     // Non-negativity constraints
     for i in 0..n_vars {
-        mat_g[(6 + i, i)] = -1.0;
-        vec_h[(6 + i, 0)] = 0.0;
+        mat_g[(4 + i, i)] = -1.0;
+        vec_h[(4 + i, 0)] = 0.0;
     }
+
+    // Upper bound constraints
+    mat_g[(8, 0)] = 1.0;
+    vec_h[(8, 0)] = reserves1[0] * 0.1; // dx0 <= 10% of reserves1[0]
+    mat_g[(9, 2)] = 1.0;
+    vec_h[(9, 0)] = reserves2[1] * 0.1; // dy2 <= 10% of reserves2[1]
 
     // Create empty matrices for equality constraints (we don't have any in this problem)
     let mat_a = MatBuild::new(MatType::General(0, n_vars));
     let vec_b = MatBuild::new(MatType::General(0, 1));
+
+    // Debug output
+    println!("Objective vector c:");
+    println!("{:?}", vec_c);
+    println!("Constraint matrix G:");
+    println!("{:?}", mat_g);
+    println!("Constraint vector h:");
+    println!("{:?}", vec_h);
 
     // Create the ProbLP struct
     let mut prob = ProbLP::new(vec_c.clone(), mat_g.clone(), vec_h.clone(), mat_a, vec_b);
@@ -85,13 +85,7 @@ fn main() {
 
             // Calculate and print the objective value (profit)
             let profit: f64 = x[3] - x[0];
-            println!("Solution vector: {:?}", x);
-            println!("Profit: {:.16}", profit);
-
-            // Additional checks
-            println!("TOKEN-1 received from Pool 1: {:.6}", x[1]);
-            println!("TOKEN-1 traded to Pool 2: {:.6}", x[2]);
-            println!("TOKEN-1 balance: {:.6}", x[1] - x[2]);
+            println!("Profit: {:.6}", profit);
 
             // Check if the solution satisfies the constant product formula for both pools
             let new_reserve1_0 = reserves1[0] + x[0];
@@ -139,17 +133,16 @@ fn main() {
                 "Pool 2 exchange rate: 1 TOKEN-0 = {:.6} TOKEN-1",
                 reserves2[1] / reserves2[0]
             );
+
+            // Manual arbitrage check
+            let token1_from_pool1 = reserves1[1] * x[0] / (reserves1[0] + x[0]);
+            let token0_from_pool2 =
+                reserves2[0] * token1_from_pool1 / (reserves2[1] + token1_from_pool1);
+            let manual_profit = token0_from_pool2 * fee - x[0];
+            println!("Manual arbitrage check - Profit: {:.6}", manual_profit);
         }
         Err(e) => {
             println!("Error: {:?}", e);
-
-            // Print problem details for debugging
-            println!("Objective vector c:");
-            println!("{:?}", vec_c);
-            println!("Constraint matrix G:");
-            println!("{:?}", mat_g);
-            println!("Constraint vector h:");
-            println!("{:?}", vec_h);
         }
     }
 }

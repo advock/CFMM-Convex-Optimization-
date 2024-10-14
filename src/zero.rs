@@ -3,7 +3,6 @@ use totsu::{MatBuild, ProbLP, ProbSOCP};
 type La = FloatGeneric<f64>;
 
 fn main() {
-    //a
     let reserves1: Vec<f64> = vec![100.0, 10.0]; // Pool 1: TOKEN-0/TOKEN-1
     let reserves2: Vec<f64> = vec![90.0, 15.0]; // Pool 2: TOKEN-0/TOKEN-1
     let fee: f64 = 0.997; // 0.3% fee
@@ -16,33 +15,32 @@ fn main() {
     vec_c[(3, 0)] = 1.0; // Receive TOKEN-0 from Pool 2
 
     // Constraint matrix G and vector h for Gx <= h
-    let mut mat_g = MatBuild::new(MatType::General(11, n_vars));
-    let mut vec_h = MatBuild::new(MatType::General(11, 1));
+    let mut mat_g = MatBuild::new(MatType::General(10, n_vars));
+    let mut vec_h = MatBuild::new(MatType::General(10, 1));
 
     // Constant product constraints
     mat_g[(0, 0)] = reserves1[1];
     mat_g[(0, 1)] = -reserves1[0] / fee;
-    vec_h[(0, 0)] = 0.0; // x0 * reserves1[1] <= y1 * reserves1[0] / fee
-
+    vec_h[(0, 0)] = 0.0; // x1 * reserves1[1] <= y1 * reserves1[0] / fee
     mat_g[(1, 2)] = reserves2[0];
     mat_g[(1, 3)] = -reserves2[1] / fee;
-    vec_h[(1, 0)] = 0.0; // x2 * reserves2[0] <= y3 * reserves2[1] / fee
+    vec_h[(1, 0)] = 0.0; // x2 * reserves2[0] <= y2 * reserves2[1] / fee
 
     // Ensure new reserves are not less than original reserves
     mat_g[(2, 0)] = 1.0;
-    vec_h[(2, 0)] = reserves1[0] * 0.1; // Limit trade to 10% of reserves
+    mat_g[(2, 1)] = -1.0 / fee;
+    vec_h[(2, 0)] = 0.0; // x1 >= y1 / fee (for Pool 1)
     mat_g[(3, 2)] = 1.0;
-    vec_h[(3, 0)] = reserves2[1] * 0.1; // Limit trade to 10% of reserves
+    mat_g[(3, 3)] = -1.0 / fee;
+    vec_h[(3, 0)] = 0.0; // x2 >= y2 / fee (for Pool 2)
 
-    // Ensure TOKEN-1 received from Pool 1 equals TOKEN-1 traded to Pool 2
+    // Arbitrage constraints
     mat_g[(4, 1)] = 1.0;
     mat_g[(4, 2)] = -1.0;
-    vec_h[(4, 0)] = 0.0; // y1 = x2
-
-    // Ensure profit is non-negative
-    mat_g[(5, 0)] = 1.0;
-    mat_g[(5, 3)] = -1.0;
-    vec_h[(5, 0)] = 0.0; // y3 >= x0
+    vec_h[(4, 0)] = 0.0; // y1 <= x2
+    mat_g[(5, 3)] = 1.0;
+    mat_g[(5, 0)] = -1.0;
+    vec_h[(5, 0)] = 0.0; // y2 <= x1
 
     // Non-negativity constraints
     for i in 0..n_vars {
@@ -85,8 +83,7 @@ fn main() {
 
             // Calculate and print the objective value (profit)
             let profit: f64 = x[3] - x[0];
-            println!("Solution vector: {:?}", x);
-            println!("Profit: {:.16}", profit);
+            println!("Profit: {:.6}", profit);
 
             // Additional checks
             println!("TOKEN-1 received from Pool 1: {:.6}", x[1]);
