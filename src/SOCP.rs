@@ -90,7 +90,7 @@ fn main() {
 
                 h[(0, 0)] = pool_reserves[0];
                 h[(1, 0)] = pool_reserves[1];
-                h[(2, 0)] = (pool_reserves[0] * pool_reserves[1] as f64).sqrt() * 0.999; // Allow for slight imbalance
+                h[(2, 0)] = (pool_reserves[0] * pool_reserves[1] as f64).sqrt() * 0.996; // Allow for slight imbalance
 
                 mats_g.push(g);
                 vecs_h.push(h);
@@ -158,9 +158,9 @@ fn main() {
 
     // Adjust solver parameters
     solver = solver.par(|p| {
-        p.eps_acc = 1e-5;
-        p.eps_inf = 1e-5;
-        p.max_iter = Some(1000000);
+        p.eps_acc = 1e-3;
+        p.eps_inf = 1e-3;
+        p.max_iter = Some(2000000);
     });
 
     // Generate the problem components and solve
