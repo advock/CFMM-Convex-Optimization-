@@ -16,8 +16,8 @@ fn main() {
     vec_c[(3, 0)] = 1.0; // Receive TOKEN-0 from Pool 2
 
     // Constraint matrix G and vector h for Gx <= h
-    let mut mat_g = MatBuild::new(MatType::General(10, n_vars)); // Increase size to 10x4
-    let mut vec_h = MatBuild::new(MatType::General(10, 1)); // Increase size to 10x1
+    let mut mat_g = MatBuild::new(MatType::General(9, n_vars)); // Increase size to 10x4 // constrains
+    let mut vec_h = MatBuild::new(MatType::General(9, 1)); // Increase size to 10x1
 
     // Constant product constraints (slightly relaxed)
     mat_g[(0, 0)] = reserves1[1];

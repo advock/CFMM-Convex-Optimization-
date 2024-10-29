@@ -13,3 +13,13 @@ env_logger = "0.10"
 [[bin]]
 name = "SOCP"
 path = "src/SOCP.rs"
+
+
+[[bin]]
+name = "multi"
+path = "src/multi.rs"
+
+
+[[bin]]
+name = "graphical"
+path = "src/graphical.rs"
