@@ -87,7 +87,7 @@ fn prepare_lp_data(
     }
 
     for j in 0..n_vars {
-        vec_c[(j, 0)] = 0.0;
+        vec_c[(j, 0)] -= 1e-4;
     }
 
     // Set up flow conservation constraints
