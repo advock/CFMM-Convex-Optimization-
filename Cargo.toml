@@ -7,6 +7,9 @@ edition = "2021"
 totsu = "0.10.2"
 ethers = "2.0.14"
 log = "0.4.17"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+petgraph = "0.6.5"
 env_logger = "0.10"
 
 
@@ -23,3 +26,7 @@ path = "src/multi.rs"
 [[bin]]
 name = "graphical"
 path = "src/graphical.rs"
+
+[[bin]]
+name = "node_edges"
+path = "src/node_edges.rs"

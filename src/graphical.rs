@@ -39,14 +39,14 @@ fn create_sample_pools() -> HashMap<(usize, usize), Pool> {
     let mut graph = HashMap::new();
 
     let pool_configs = [
-        ((0, 1), (1000.0, 2050.0)), // ETH-USDC
-        ((1, 2), (2000.0, 1000.0)), // USDC-DAI
-        ((2, 0), (1100.0, 500.0)),  // DAI-ETH
+        ((0, 1), (1000.0, 2050.0)), // More diverse pricing
+        ((1, 2), (2000.0, 1950.0)),
+        ((2, 0), (1100.0, 1050.0)),
         ((2, 3), (1500.0, 1480.0)),
-        ((3, 4), (1200.0, 1000.0)),
-        ((4, 0), (1800.0, 900.0)),
-        ((1, 3), (1300.0, 1700.0)),
-        ((2, 4), (1900.0, 1100.0)),
+        ((3, 4), (1200.0, 1180.0)),
+        ((4, 0), (1800.0, 1750.0)),
+        ((1, 3), (1300.0, 1280.0)),
+        ((2, 4), (1900.0, 1850.0)),
     ];
 
     for (i, ((from, to), (reserve0, reserve1))) in pool_configs.iter().enumerate() {
@@ -66,7 +66,7 @@ fn create_sample_pools() -> HashMap<(usize, usize), Pool> {
 fn prepare_lp_data(
     graph: &HashMap<(usize, usize), Pool>,
     start_asset: usize,
-) -> (MatBuild<La>, MatBuild<La>, MatBuild<La>, Vec<f64>) {
+) -> (MatBuild<La>, MatBuild<La>, MatBuild<La>) {
     let n_vars = graph.len();
     let n_constraints = NUM_ASSETS;
 
@@ -87,7 +87,7 @@ fn prepare_lp_data(
     }
 
     for j in 0..n_vars {
-        vec_c[(j, 0)] -= 1e-4;
+        vec_c[(j, 0)] -= 1e-2;
     }
 
     // Set up flow conservation constraints
@@ -157,7 +157,7 @@ fn prepare_lp_data(
                       n * m +             // Hessian
                       m * m +             // Additional matrix ops
                       n * n +             // More matrix ops
-                      500; // Extra buffer
+                      1000; // Extra buffer
 
     println!("\nRequired workspace length: {}", required_len);
     let workspace = vec![0.0; required_len];
@@ -167,33 +167,41 @@ fn prepare_lp_data(
     println!("h: {}x{}", vec_h.size().0, vec_h.size().1);
     println!("c: {}x{}", vec_c.size().0, vec_c.size().1);
 
-    (vec_c, mat_g, vec_h, workspace)
+    (vec_c, mat_g, vec_h)
 }
 
 fn find_arbitrage(
     graph: &HashMap<(usize, usize), Pool>,
     start_asset: usize,
 ) -> Result<Option<ArbitragePath>, Box<dyn std::error::Error>> {
-    let (mut vec_c, mut mat_g, mut vec_h, mut work) = prepare_lp_data(graph, start_asset);
+    let (mut vec_c, mut mat_g, mut vec_h) = prepare_lp_data(graph, start_asset);
 
     let n_vars = graph.len();
 
     let cost_coeffs: Vec<f64> = (0..n_vars).map(|i| vec_c[(i, 0)]).collect();
 
-    let vec_c_op: MatOp<La> = vec_c.as_op();
-    let mat_g_op: MatOp<La> = mat_g.as_op();
-    let vec_h_op: MatOp<La> = vec_h.as_op();
+    // let vec_c_op: MatOp<La> = vec_c.as_op();
+    // let mat_g_op: MatOp<La> = mat_g.as_op();
+    // let vec_h_op: MatOp<La> = vec_h.as_op();
+
+    let mat_a = MatBuild::new(MatType::General(0, n_vars));
+    let vec_b = MatBuild::new(MatType::General(0, 1));
+
+    let mut prob = ProbLP::new(vec_c.clone(), mat_g.clone(), vec_h.clone(), mat_a, vec_b);
 
     let cone = ConeZero::<La>::new();
 
     let mut solver = Solver::<La>::new().par(|p| {
-        p.eps_acc = 1e-9;
-        p.max_iter = Some(200000);
-        p.log_period = 100;
+        p.eps_acc = 1e-6; // Relax from 1e-9
+        p.eps_inf = 1e-6; // Add infeasibility tolerance
+        p.max_iter = Some(500000); // Increase iterations
+        p.log_period = 1000;
     });
 
+    let (op_c, op_a, op_b, cone, mut work) = prob.problem();
+
     println!("\nStarting solver...");
-    match solver.solve((vec_c_op, mat_g_op, vec_h_op, cone, &mut work)) {
+    match solver.solve((op_c, op_a, op_b, cone, &mut work)) {
         Ok(result) => {
             let (x, y) = result;
 

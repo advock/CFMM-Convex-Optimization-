@@ -9,6 +9,9 @@ dependencies = [
  "env_logger",
  "ethers",
  "log",
+ "petgraph",
+ "serde",
+ "serde_json",
  "totsu",
 ]
 
