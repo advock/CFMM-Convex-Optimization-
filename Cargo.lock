@@ -15,7 +15,6 @@ dependencies = [
  "pkg-config",
  "serde",
  "serde_json",
- "totsu",
 ]
 
 [[package]]
@@ -3148,27 +3147,6 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "winnow",
-]
-
-[[package]]
-name = "totsu"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "591e6d5702a16fe5ef5038d4449df02672dfe261157d6b3cd1ecc711b3091ed4"
-dependencies = [
- "log",
- "num-traits",
- "totsu_core",
-]
-
-[[package]]
-name = "totsu_core"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad6826e633788d60e543eaed52a430a07a994af2ecf6d56299499b07e9838f90"
-dependencies = [
- "log",
- "num-traits",
 ]
 
 [[package]]

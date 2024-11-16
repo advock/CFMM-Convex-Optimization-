@@ -3,8 +3,10 @@ name = "CFMM_covex_optimization"
 version = "0.1.0"
 edition = "2021"
 
+[build-dependencies]
+pkg-config = "0.3"
+
 [dependencies]
-totsu = "0.10.2"
 ethers = "2.0.14"
 log = "0.4.17"
 serde = { version = "1.0", features = ["derive"] }
@@ -13,7 +15,6 @@ petgraph = "0.6.5"
 env_logger = "0.10"
 ndarray = "0.16.1"
 good_lp = { version = "1.4.1", features = ["coin_cbc"] }
-pkg-config = "0.3"
 
 
 [[bin]]
